@@ -52,3 +52,14 @@ CREATE INDEX IF NOT EXISTS idx_uploaded_models_user ON uploaded_models(user_id);
 CREATE INDEX IF NOT EXISTS idx_uploaded_datasets_user ON uploaded_datasets(user_id);
 CREATE INDEX IF NOT EXISTS idx_model_metrics_user ON model_metrics(user_id);
 CREATE INDEX IF NOT EXISTS idx_drift_logs_user ON drift_logs(user_id);
+CREATE TABLE IF NOT EXISTS explainability_logs (
+    id SERIAL PRIMARY KEY,
+    model_name VARCHAR(255),
+    dataset_name VARCHAR(255),
+    num_features INTEGER,
+    interpretability_score FLOAT,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_explainability_user ON explainability_logs(user_id);
