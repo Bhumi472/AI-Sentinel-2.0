@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Database, Zap, TrendingDown, Brain, AlertTriangle, PieChart, Eye, Settings, LogOut, User } from 'lucide-react';
+import { BarChart3, Database, Zap, TrendingDown, Brain, AlertTriangle, PieChart, Eye, Settings, LogOut, User, Lightbulb, Sparkles, Rocket, LineChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -11,15 +11,25 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-  { id: 'models', label: 'Models', icon: Database },
-  { id: 'data-quality', label: 'Data Quality', icon: Eye },
-  { id: 'drift-detection', label: 'Data Drift', icon: TrendingDown },
-  { id: 'concept-drift', label: 'Concept Drift', icon: Zap },
-  { id: 'explainability', label: 'Explainability', icon: Brain },
-  { id: 'bias', label: 'Bias & Fairness', icon: PieChart },
-  { id: 'alerts', label: 'Alerts', icon: AlertTriangle },
-  { id: 'business-impact', label: 'Business Impact', icon: BarChart3 },
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3, badge: null },
+  { id: 'models', label: 'Models', icon: Database, badge: null },
+  { id: 'upload', label: 'Upload', icon: Rocket, badge: null },
+  
+  { divider: true, label: 'MONITORING' },
+  
+  { id: 'data-quality', label: 'Data Quality', icon: Eye, badge: null },
+  { id: 'drift-detection', label: 'Data Drift', icon: TrendingDown, badge: null },
+  { id: 'concept-drift', label: 'Concept Drift', icon: Zap, badge: null },
+  { id: 'explainability', label: 'Explainability', icon: Brain, badge: null },
+  { id: 'bias', label: 'Bias & Fairness', icon: PieChart, badge: null },
+  
+  { divider: true, label: 'ADVANCED AI' },
+  
+  { id: 'auto-insights', label: 'Auto Insights', icon: Lightbulb, badge: 'AI' },
+  { id: 'decision-engine', label: 'Decision Engine', icon: LineChart, badge: 'Auto' },
+  { id: 'auto-dashboard', label: 'Auto Dashboard', icon: Sparkles, badge: 'Gen' },
+  { id: 'alerts', label: 'Alerts', icon: AlertTriangle, badge: null },
+  { id: 'business-impact', label: 'Business Impact', icon: BarChart3, badge: null },
 ];
 
 export function Sidebar({ activeSection, setActiveSection }: SidebarProps) {
@@ -29,7 +39,7 @@ export function Sidebar({ activeSection, setActiveSection }: SidebarProps) {
   const handleLogout = () => {
     setIsLoggingOut(true);
     setTimeout(() => {
-      localStorage.removeItem('token');
+      localStorage.removeItem('access_token');
       router.push('/login');
     }, 300);
   };
@@ -59,7 +69,17 @@ export function Sidebar({ activeSection, setActiveSection }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-        {menuItems.map((item) => {
+        {menuItems.map((item, idx) => {
+          if ('divider' in item) {
+            return (
+              <div key={idx} className="pt-4 pb-2">
+                <p className="text-xs font-semibold text-sidebar-foreground/50 tracking-wider">
+                  {item.label}
+                </p>
+              </div>
+            );
+          }
+          
           const Icon = item.icon;
           const isActive = activeSection === item.id;
           
@@ -75,7 +95,16 @@ export function Sidebar({ activeSection, setActiveSection }: SidebarProps) {
               }`}
             >
               <Icon className="w-4 h-4 mr-3" />
-              <span className="text-sm font-medium">{item.label}</span>
+              <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
+              {item.badge && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  item.badge === 'AI' ? 'bg-yellow-500/20 text-yellow-400' :
+                  item.badge === 'Auto' ? 'bg-indigo-500/20 text-indigo-400' :
+                  'bg-emerald-500/20 text-emerald-400'
+                }`}>
+                  {item.badge}
+                </span>
+              )}
             </Button>
           );
         })}

@@ -14,6 +14,14 @@ from model_drift import model_drift_bp
 from explainability import explainability_bp
 from config import Config
 from data_quality import quality_bp
+from bias_fairness import bias_bp  # ← ADD THIS LINE
+from dashboard import dashboard_bp
+from alerts import alerts_bp
+from auto_learning import auto_learning_bp
+from decision_engine import decision_bp
+from auto_dashboard import auto_dashboard_bp
+
+
 app = Flask(__name__)
 app.config.from_object(Config)
 
@@ -26,7 +34,14 @@ app.register_blueprint(upload_bp, url_prefix="/upload")
 app.register_blueprint(drift_bp, url_prefix="/drift")
 app.register_blueprint(model_drift_bp, url_prefix="/model-drift")
 app.register_blueprint(explainability_bp, url_prefix="/explainability")
-app.register_blueprint(quality_bp,url_prefix="/quality")
+app.register_blueprint(quality_bp, url_prefix="/quality")
+app.register_blueprint(bias_bp, url_prefix="/bias")  # ← ADD THIS LINE
+app.register_blueprint(dashboard_bp, url_prefix="/dashboard")
+app.register_blueprint(alerts_bp, url_prefix="/alerts")
+app.register_blueprint(auto_learning_bp, url_prefix="/auto-learning")
+app.register_blueprint(decision_bp, url_prefix="/decision")
+app.register_blueprint(auto_dashboard_bp, url_prefix="/auto-dashboard")
+
 
 @app.route("/")
 def home():

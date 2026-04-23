@@ -7,8 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { AlertTriangle, TrendingDown, TrendingUp, Activity } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
+import { 
+  AlertTriangle, TrendingDown, TrendingUp, Activity, Shield, 
+  Brain, Target, Clock, BarChart3, Zap, CheckCircle, XCircle,
+  TrendingUp as TrendUp, TrendingDown as TrendDown, Minus
+} from 'lucide-react';
 
 interface Model {
   id: number;
@@ -27,30 +34,36 @@ interface ModelMetrics {
   precision?: number;
   recall?: number;
   f1_score?: number;
+  auc?: number;
   mse?: number;
   rmse?: number;
   r2_score?: number;
   mae?: number;
+  mape?: number;
 }
 
 interface EvaluationResult {
+  success: boolean;
   model_name: string;
   dataset_name: string;
   task_type: string;
   metrics: ModelMetrics;
   drift_detected: boolean;
+  drift_type: string;
+  drift_severity: string;
   drift_score: number;
-  drift_percentage: number | null;
-  baseline_metrics: any;
-}
-
-interface PerformanceHistory {
-  [modelName: string]: Array<{
+  affected_metrics: string[];
+  performance_history: Array<{
     accuracy: number;
     precision: number;
     recall: number;
+    f1_score: number;
     timestamp: string;
   }>;
+  baseline_metrics: any;
+  recommendations: string[];
+  total_samples: number;
+  timestamp: string;
 }
 
 export function ConceptDrift() {
@@ -62,7 +75,6 @@ export function ConceptDrift() {
   const [targetColumn, setTargetColumn] = useState<string>('');
   const [taskType, setTaskType] = useState<string>('classification');
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
-  const [performanceHistory, setPerformanceHistory] = useState<PerformanceHistory>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [availableColumns, setAvailableColumns] = useState<string[]>([]);
@@ -72,7 +84,6 @@ export function ConceptDrift() {
   useEffect(() => {
     fetchModels();
     fetchDatasets();
-    fetchPerformanceHistory();
   }, []);
 
   const fetchModels = async () => {
@@ -111,24 +122,6 @@ export function ConceptDrift() {
       }
     } catch (err) {
       console.error('Failed to fetch datasets:', err);
-    }
-  };
-
-  const fetchPerformanceHistory = async () => {
-    const token = getToken();
-    if (!token) return;
-
-    try {
-      const res = await fetch('http://localhost:8000/model-drift/history?days=30', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setPerformanceHistory(data.history || {});
-      }
-    } catch (err) {
-      console.error('Failed to fetch performance history:', err);
     }
   };
 
@@ -172,7 +165,6 @@ export function ConceptDrift() {
       }
 
       setEvaluationResult(data);
-      fetchPerformanceHistory(); // Refresh history
 
     } catch (err) {
       setError('Network error. Please try again.');
@@ -181,20 +173,30 @@ export function ConceptDrift() {
     }
   };
 
-  const getDriftStatusColor = (driftDetected: boolean) => {
-    return driftDetected ? 'text-red-500' : 'text-green-500';
+  const getDriftSeverityColor = (severity: string) => {
+    switch(severity) {
+      case 'high': return 'text-red-500 bg-red-500/10 border-red-500/30';
+      case 'medium': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30';
+      default: return 'text-green-500 bg-green-500/10 border-green-500/30';
+    }
   };
 
-  const getDriftStatusBg = (driftDetected: boolean) => {
-    return driftDetected ? 'bg-red-500/10 border-red-500/30' : 'bg-green-500/10 border-green-500/30';
+  const getMetricTrend = (current: number, baseline: number) => {
+    if (!baseline) return 'neutral';
+    const diff = current - baseline;
+    if (diff > 0.02) return 'up';
+    if (diff < -0.02) return 'down';
+    return 'neutral';
   };
 
   return (
     <div className="p-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold">Model Performance Drift Detection</h1>
-        <p className="text-muted-foreground mt-2">Monitor model performance degradation over time</p>
+        <h1 className="text-4xl font-bold">Concept Drift Detection</h1>
+        <p className="text-muted-foreground mt-2">
+          Monitor model performance degradation over time to detect concept drift
+        </p>
       </div>
 
       {error && (
@@ -220,7 +222,10 @@ export function ConceptDrift() {
                 <SelectContent>
                   {models.map(model => (
                     <SelectItem key={model.id} value={model.id.toString()}>
-                      {model.filename}
+                      <div className="flex items-center gap-2">
+                        <Brain className="w-4 h-4" />
+                        {model.filename}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -236,7 +241,10 @@ export function ConceptDrift() {
                 <SelectContent>
                   {datasets.map(dataset => (
                     <SelectItem key={dataset.id} value={dataset.id.toString()}>
-                      {dataset.filename}
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-4 h-4" />
+                        {dataset.filename}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -246,16 +254,17 @@ export function ConceptDrift() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Target Column Name</label>
+              <label className="block text-sm font-medium mb-2">Target Column</label>
               <Input
                 type="text"
                 value={targetColumn}
                 onChange={(e) => setTargetColumn(e.target.value)}
-                placeholder="e.g., target, label, class"
+                placeholder="e.g., target, label, price"
               />
               {availableColumns.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Available: {availableColumns.join(', ')}
+                  Available: {availableColumns.slice(0, 5).join(', ')}
+                  {availableColumns.length > 5 && ` + ${availableColumns.length - 5} more`}
                 </p>
               )}
             </div>
@@ -278,8 +287,19 @@ export function ConceptDrift() {
             onClick={evaluateModel} 
             disabled={loading || !selectedModel || !selectedDataset || !targetColumn}
             className="w-full"
+            size="lg"
           >
-            {loading ? 'Evaluating Model...' : 'Evaluate Model Performance'}
+            {loading ? (
+              <>
+                <Activity className="w-4 h-4 mr-2 animate-spin" />
+                Evaluating Model Performance...
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 mr-2" />
+                Detect Concept Drift
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
@@ -288,183 +308,276 @@ export function ConceptDrift() {
       {evaluationResult && (
         <>
           {/* Drift Alert */}
-          <Card className={getDriftStatusBg(evaluationResult.drift_detected)}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {evaluationResult.drift_detected ? (
-                    <AlertTriangle className="w-8 h-8 text-red-500" />
-                  ) : (
-                    <Activity className="w-8 h-8 text-green-500" />
-                  )}
-                  <div>
-                    <h3 className={`text-xl font-bold ${getDriftStatusColor(evaluationResult.drift_detected)}`}>
-                      {evaluationResult.drift_detected ? 'Performance Drift Detected!' : 'No Drift Detected'}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Model: {evaluationResult.model_name} | Dataset: {evaluationResult.dataset_name}
-                    </p>
-                  </div>
-                </div>
-                {evaluationResult.drift_percentage !== null && (
-                  <div className="text-right">
-                    <p className="text-3xl font-bold text-red-500">
-                      {evaluationResult.drift_percentage > 0 ? '-' : '+'}{Math.abs(evaluationResult.drift_percentage).toFixed(2)}%
-                    </p>
-                    <p className="text-sm text-muted-foreground">vs Baseline</p>
-                  </div>
+          <div className={`p-6 rounded-lg border ${getDriftSeverityColor(evaluationResult.drift_severity)}`}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                {evaluationResult.drift_detected ? (
+                  <AlertTriangle className="w-10 h-10 text-red-500 flex-shrink-0" />
+                ) : (
+                  <CheckCircle className="w-10 h-10 text-green-500 flex-shrink-0" />
                 )}
+                <div>
+                  <h3 className="text-xl font-bold">
+                    {evaluationResult.drift_detected ? '⚠️ Concept Drift Detected!' : '✅ No Concept Drift Detected'}
+                  </h3>
+                  <p className="text-sm mt-1">
+                    {evaluationResult.drift_type}
+                  </p>
+                  {evaluationResult.drift_detected && (
+                    <div className="mt-2">
+                      <Badge variant="outline" className="mr-2">
+                        Drift Score: {(evaluationResult.drift_score * 100).toFixed(1)}%
+                      </Badge>
+                      <Badge variant="outline">
+                        Severity: {evaluationResult.drift_severity.toUpperCase()}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Model</p>
+                <p className="font-mono text-sm">{evaluationResult.model_name}</p>
+                <p className="text-sm text-muted-foreground mt-1">Samples</p>
+                <p className="font-mono text-sm">{evaluationResult.total_samples.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
 
           {/* Current Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {taskType === 'classification' ? (
               <>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">Accuracy</p>
-                    <p className="text-3xl font-bold mt-2">
-                      {(evaluationResult.metrics.accuracy! * 100).toFixed(2)}%
-                    </p>
-                    {evaluationResult.baseline_metrics?.accuracy && (
-                      <div className="flex items-center gap-1 mt-1">
-                        {evaluationResult.metrics.accuracy! >= evaluationResult.baseline_metrics.accuracy ? (
-                          <TrendingUp className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 text-red-500" />
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          Baseline: {(evaluationResult.baseline_metrics.accuracy * 100).toFixed(2)}%
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">Precision</p>
-                    <p className="text-3xl font-bold mt-2">
-                      {(evaluationResult.metrics.precision! * 100).toFixed(2)}%
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">Recall</p>
-                    <p className="text-3xl font-bold mt-2">
-                      {(evaluationResult.metrics.recall! * 100).toFixed(2)}%
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">F1 Score</p>
-                    <p className="text-3xl font-bold mt-2">
-                      {(evaluationResult.metrics.f1_score! * 100).toFixed(2)}%
-                    </p>
-                  </CardContent>
-                </Card>
+                <MetricCard 
+                  title="Accuracy" 
+                  value={evaluationResult.metrics.accuracy} 
+                  baseline={evaluationResult.baseline_metrics?.accuracy}
+                  format="percentage"
+                />
+                <MetricCard 
+                  title="Precision" 
+                  value={evaluationResult.metrics.precision} 
+                  baseline={evaluationResult.baseline_metrics?.precision}
+                  format="percentage"
+                />
+                <MetricCard 
+                  title="Recall" 
+                  value={evaluationResult.metrics.recall} 
+                  baseline={evaluationResult.baseline_metrics?.recall}
+                  format="percentage"
+                />
+                <MetricCard 
+                  title="F1 Score" 
+                  value={evaluationResult.metrics.f1_score} 
+                  baseline={evaluationResult.baseline_metrics?.f1_score}
+                  format="percentage"
+                />
               </>
             ) : (
               <>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">RMSE</p>
-                    <p className="text-3xl font-bold mt-2">
-                      {evaluationResult.metrics.rmse!.toFixed(4)}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">R² Score</p>
-                    <p className="text-3xl font-bold mt-2">
-                      {evaluationResult.metrics.r2_score!.toFixed(4)}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">MAE</p>
-                    <p className="text-3xl font-bold mt-2">
-                      {evaluationResult.metrics.mae!.toFixed(4)}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground">MSE</p>
-                    <p className="text-3xl font-bold mt-2">
-                      {evaluationResult.metrics.mse!.toFixed(4)}
-                    </p>
-                  </CardContent>
-                </Card>
+                <MetricCard 
+                  title="RMSE" 
+                  value={evaluationResult.metrics.rmse} 
+                  baseline={evaluationResult.baseline_metrics?.rmse}
+                  format="number"
+                  lowerIsBetter={true}
+                />
+                <MetricCard 
+                  title="R² Score" 
+                  value={evaluationResult.metrics.r2_score} 
+                  baseline={evaluationResult.baseline_metrics?.r2_score}
+                  format="percentage"
+                />
+                <MetricCard 
+                  title="MAE" 
+                  value={evaluationResult.metrics.mae} 
+                  baseline={evaluationResult.baseline_metrics?.mae}
+                  format="number"
+                  lowerIsBetter={true}
+                />
+                <MetricCard 
+                  title="MAPE" 
+                  value={evaluationResult.metrics.mape} 
+                  baseline={evaluationResult.baseline_metrics?.mape}
+                  format="percentage"
+                  lowerIsBetter={true}
+                />
               </>
             )}
           </div>
-        </>
-      )}
 
-      {/* Performance History */}
-      {Object.keys(performanceHistory).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Performance History (Last 30 Days)</CardTitle>
-            <CardDescription>Track how your models perform over time</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {Object.entries(performanceHistory).map(([modelName, history]) => (
-              <div key={modelName} className="mb-8">
-                <h4 className="font-semibold mb-3">{modelName}</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={history}>
-                    <CartesianGrid strokeDasharray="3 3" />
+          {/* Affected Metrics */}
+          {evaluationResult.affected_metrics.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Affected Metrics</CardTitle>
+                <CardDescription>Metrics showing significant degradation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {evaluationResult.affected_metrics.map((metric, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-red-500/10 rounded">
+                      <TrendDown className="w-4 h-4 text-red-500" />
+                      <span className="text-sm">{metric}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Performance History Chart */}
+          {evaluationResult.performance_history && evaluationResult.performance_history.length > 1 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance History</CardTitle>
+                <CardDescription>Model performance trend over time</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                  <LineChart data={evaluationResult.performance_history}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                     <XAxis 
                       dataKey="timestamp" 
                       tickFormatter={(val) => new Date(val).toLocaleDateString()}
+                      stroke="rgba(255,255,255,0.5)"
                     />
-                    <YAxis domain={[0, 1]} />
+                    <YAxis domain={[0, 1]} stroke="rgba(255,255,255,0.5)" />
                     <Tooltip 
                       labelFormatter={(val) => new Date(val).toLocaleString()}
                       formatter={(value: number) => (value * 100).toFixed(2) + '%'}
+                      contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #6366f1' }}
                     />
                     <Legend />
-                    <Line type="monotone" dataKey="accuracy" stroke="#3b82f6" name="Accuracy" strokeWidth={2} />
-                    <Line type="monotone" dataKey="precision" stroke="#10b981" name="Precision" strokeWidth={2} />
-                    <Line type="monotone" dataKey="recall" stroke="#f59e0b" name="Recall" strokeWidth={2} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="accuracy" 
+                      stroke="#3b82f6" 
+                      name="Accuracy" 
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="precision" 
+                      stroke="#10b981" 
+                      name="Precision" 
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="recall" 
+                      stroke="#f59e0b" 
+                      name="Recall" 
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="f1_score" 
+                      stroke="#ec4899" 
+                      name="F1 Score" 
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recommendations */}
+          <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20">
+            <CardHeader>
+              <CardTitle>Recommendations</CardTitle>
+              <CardDescription>Based on concept drift analysis</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {evaluationResult.recommendations.map((rec, idx) => (
+                <div key={idx} className="flex gap-3 p-3 bg-background/50 rounded-lg">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center text-xs font-bold text-primary">
+                    {idx + 1}
+                  </div>
+                  <p className="text-sm">{rec}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </>
       )}
 
-      {/* Instructions */}
-      {models.length === 0 || datasets.length === 0 ? (
+      {/* Empty State */}
+      {!evaluationResult && !loading && models.length > 0 && datasets.length > 0 && (
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <Activity className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">Get Started</h3>
-              <p className="text-muted-foreground mb-4">
-                Upload a trained model (.pkl) and a test dataset (.csv) to detect performance drift
-              </p>
-              <Button onClick={() => window.location.href = '/'}>
-                Upload Model & Dataset
-              </Button>
+          <CardContent className="pt-12 pb-12 text-center">
+            <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-xl font-semibold mb-2">Ready to Detect Concept Drift</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Select a trained model and a test dataset to evaluate performance and detect concept drift
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
+              <div className="p-3 bg-muted/30 rounded-lg">
+                <TrendUp className="w-4 h-4 text-green-500 mb-2" />
+                <p className="text-sm font-medium">Performance Tracking</p>
+                <p className="text-xs text-muted-foreground">Monitor metrics over time</p>
+              </div>
+              <div className="p-3 bg-muted/30 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-yellow-500 mb-2" />
+                <p className="text-sm font-medium">Drift Detection</p>
+                <p className="text-xs text-muted-foreground">Identify performance degradation</p>
+              </div>
+              <div className="p-3 bg-muted/30 rounded-lg">
+                <Brain className="w-4 h-4 text-purple-500 mb-2" />
+                <p className="text-sm font-medium">Retraining Alerts</p>
+                <p className="text-xs text-muted-foreground">Know when to retrain</p>
+              </div>
             </div>
           </CardContent>
         </Card>
-      ) : null}
+      )}
     </div>
+  );
+}
+
+// Helper component for metric cards
+function MetricCard({ title, value, baseline, format, lowerIsBetter = false }: any) {
+  if (value === undefined || value === null) return null;
+  
+  const trend = baseline ? (value - baseline) : 0;
+  const isBetter = lowerIsBetter ? trend < 0 : trend > 0;
+  
+  const formattedValue = format === 'percentage' 
+    ? `${(value * 100).toFixed(2)}%`
+    : value.toFixed(4);
+  
+  const formattedBaseline = baseline && format === 'percentage'
+    ? `${(baseline * 100).toFixed(2)}%`
+    : baseline?.toFixed(4);
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <p className="text-sm text-muted-foreground">{title}</p>
+        <p className="text-3xl font-bold mt-2">{formattedValue}</p>
+        {baseline && (
+          <div className="flex items-center gap-1 mt-1">
+            {trend !== 0 && (
+              isBetter ? 
+                <TrendUp className="w-3 h-3 text-green-500" /> : 
+                <TrendDown className="w-3 h-3 text-red-500" />
+            )}
+            <p className="text-xs text-muted-foreground">
+              Baseline: {formattedBaseline}
+            </p>
+            {trend !== 0 && (
+              <span className={`text-xs ${isBetter ? 'text-green-500' : 'text-red-500'}`}>
+                ({trend > 0 ? '+' : ''}{(trend * 100).toFixed(1)}%)
+              </span>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

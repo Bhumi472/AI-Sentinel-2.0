@@ -12,6 +12,9 @@ import { BiasMonitoring } from '@/components/bias-monitoring';
 import { AlertSystem } from '@/components/alert-system';
 import { BusinessImpact } from '@/components/business-impact';
 import { useRouter } from 'next/navigation';
+import { AutoInsights } from '@/components/auto-insights';
+import { DecisionEngine } from '@/components/decision-engine';
+import { AutoDashboard } from '@/components/auto-dashboard';
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -33,6 +36,7 @@ export default function Home() {
 
   const renderSection = () => {
     switch (activeSection) {
+      // Core Features
       case 'dashboard': return <Dashboard />;
       case 'models': return <ModelManagement />;
       case 'data-quality': return <DataQuality />;
@@ -42,6 +46,19 @@ export default function Home() {
       case 'bias': return <BiasMonitoring />;
       case 'alerts': return <AlertSystem />;
       case 'business-impact': return <BusinessImpact />;
+      
+      // Advanced AI Features
+      case 'auto-insights': return <AutoInsights />;
+      case 'decision-engine': return <DecisionEngine />;
+      case 'auto-dashboard': return <AutoDashboard />;
+      
+      // Upload Section
+      case 'upload': return <ModelManagement />; // Or create a separate Upload component
+      
+      // Settings
+      case 'settings': return <div className="p-8"><h1 className="text-2xl font-bold">Settings</h1><p className="text-muted-foreground mt-2">Settings page coming soon...</p></div>;
+      case 'performance': return <div className="p-8"><h1 className="text-2xl font-bold">Performance Analytics</h1><p className="text-muted-foreground mt-2">Performance metrics coming soon...</p></div>;
+      
       default: return <Dashboard />;
     }
   };
