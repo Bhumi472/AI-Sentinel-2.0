@@ -26,7 +26,7 @@ export function AuthForm({ type, onSuccess }: AuthFormProps) {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/auth/${isLogin ? 'login' : 'register'}`,
+        `/api/auth/${isLogin ? 'login' : 'register'}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -46,7 +46,7 @@ export function AuthForm({ type, onSuccess }: AuthFormProps) {
       }
 
       if (isLogin && data.access_token) {
-        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('access_token', data.access_token);
         onSuccess && onSuccess();
       } else if (!isLogin) {
         alert(data.message || 'Registration successful! Please check your email.');
@@ -62,7 +62,7 @@ export function AuthForm({ type, onSuccess }: AuthFormProps) {
   const handleResendVerification = async () => {
     try {
       const res = await fetch(
-        'http://localhost:8000/auth/resend-verification',
+        '/api/auth/resend-verification',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -101,11 +101,14 @@ export function AuthForm({ type, onSuccess }: AuthFormProps) {
           {needsVerification && (
             <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-yellow-800">
               <p className="font-medium">Email not verified!</p>
-              <p className="text-sm">Please check your inbox for verification email.</p>
+              <p className="text-sm">
+                Please check your inbox for verification email.
+              </p>
+
               {showResendButton && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="mt-2"
                   onClick={handleResendVerification}
                 >
@@ -131,7 +134,11 @@ export function AuthForm({ type, onSuccess }: AuthFormProps) {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <Button className="w-full" onClick={handleSubmit} disabled={loading}>
+          <Button
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={loading}
+          >
             {loading ? 'Please wait...' : isLogin ? 'Login' : 'Register'}
           </Button>
 
