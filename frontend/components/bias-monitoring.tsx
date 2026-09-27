@@ -90,7 +90,7 @@ export function BiasMonitoring() {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/upload/datasets', {
+      const res = await fetch('/api/upload/datasets', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -108,7 +108,7 @@ export function BiasMonitoring() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:8000/upload/models', {
+      const res = await fetch('/api/upload/models', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -147,7 +147,7 @@ export function BiasMonitoring() {
         requestBody.model_id = parseInt(selectedModel);
       }
       
-      const res = await fetch('http://localhost:8000/bias/analyze', {
+      const res = await fetch('/api/bias/analyze', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
