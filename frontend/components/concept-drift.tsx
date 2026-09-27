@@ -94,7 +94,7 @@ export function ConceptDrift() {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/upload/models', {
+      const res = await fetch('/api/upload/models', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -112,7 +112,7 @@ export function ConceptDrift() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:8000/upload/datasets', {
+      const res = await fetch('/api/upload/datasets', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -138,7 +138,7 @@ export function ConceptDrift() {
     const token = getToken();
 
     try {
-      const res = await fetch('http://localhost:8000/model-drift/evaluate', {
+      const res = await fetch('/api/model-drift/evaluate', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
