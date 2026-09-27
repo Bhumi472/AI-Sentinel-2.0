@@ -52,10 +52,10 @@ export function ModelManagement() {
 
     try {
       const [modelsRes, datasetsRes] = await Promise.all([
-        fetch('http://localhost:8000/upload/models', {
+        fetch('/api/upload/models', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch('http://localhost:8000/upload/datasets', {
+        fetch('/api/upload/datasets', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
@@ -101,7 +101,7 @@ export function ModelManagement() {
     form.append('file', file);
 
     try {
-      const res = await fetch(`http://localhost:8000/upload/${type}`, {
+      const res = await fetch(`/api/upload/${type}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
