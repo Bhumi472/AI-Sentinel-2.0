@@ -9,8 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertTriangle, Bell, CheckCircle2, Clock, TrendingDown, Zap, RefreshCw, Shield, Database, Brain, Activity, Loader2 } from 'lucide-react';
 
-// JUST CHANGE THIS LINE - use localhost instead of mlobserve_backend
-const API_BASE_URL = 'http://localhost:8000';
+// API base URL for deployment
+const API_BASE_URL = '/api';
 
 interface Alert {
   id: number;
@@ -53,7 +53,7 @@ export function AlertSystem() {
     }
 
     try {
-      // Uses localhost:8000 now
+      // Uses the deployment-safe API base URL
       const res = await fetch(`${API_BASE_URL}/alerts/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
