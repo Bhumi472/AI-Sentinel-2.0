@@ -61,7 +61,7 @@ export function DriftDetection() {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/upload/datasets', {
+      const res = await fetch('/api/upload/datasets', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -79,7 +79,7 @@ export function DriftDetection() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:8000/drift/history?days=7', {
+      const res = await fetch('/api/drift/history?days=7', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -105,7 +105,7 @@ export function DriftDetection() {
     const token = getToken();
 
     try {
-      const res = await fetch('http://localhost:8000/drift/analyze', {
+      const res = await fetch('/api/drift/analyze', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
