@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -104,7 +103,7 @@ export function Dashboard() {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/dashboard/metrics', {
+      const res = await fetch('/api/dashboard/metrics', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
