@@ -24,7 +24,7 @@ export function AutoDashboard() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:8000/auto-dashboard/auto-generate', {
+      const res = await fetch('/api/auto-dashboard/auto-generate', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
