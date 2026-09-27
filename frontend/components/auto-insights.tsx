@@ -37,7 +37,7 @@ export function AutoInsights() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:8000/auto-learning/insights', {
+      const res = await fetch('/api/auto-learning/insights', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
