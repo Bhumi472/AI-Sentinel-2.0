@@ -109,7 +109,7 @@ export function DataQuality() {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/upload/datasets', {
+      const res = await fetch('/api/upload/datasets', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -127,7 +127,7 @@ export function DataQuality() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:8000/upload/models', {
+      const res = await fetch('/api/upload/models', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -145,7 +145,7 @@ export function DataQuality() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:8000/quality/history', {
+      const res = await fetch('/api/quality/history', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -179,7 +179,7 @@ export function DataQuality() {
         requestBody.model_id = parseInt(selectedModel);
       }
 
-      const res = await fetch('http://localhost:8000/quality/analyze', {
+      const res = await fetch('/api/quality/analyze', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -570,4 +570,4 @@ export function DataQuality() {
       )}
     </div>
   );
-} 
+}
