@@ -19,7 +19,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: `${process.env.BACKEND_URL || "http://localhost:8000"}/:path*`,
+        destination: "https://sentinel-ai-backend-2o29.onrender.com/:path*",
       },
     ];
   },
