@@ -12,3 +12,4 @@ joblib
 shap
 lime
 gunicorn
+requests
